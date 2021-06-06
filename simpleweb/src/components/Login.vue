@@ -52,6 +52,7 @@
                 },
                 contentType: 'application/x-www-form-urlencoded',
                 success: function(result) {
+                  console.log(result);
                 },
                 processData: false,
                 data: authResult['code']

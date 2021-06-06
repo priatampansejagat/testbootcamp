@@ -31,7 +31,7 @@ app.post('/login', function (req, res) {
     if (error) throw error;
     client_id = result[0]['client_id'];
     client_secret = result[0]['client_secret'];
-    signIn(client_id,client_secret,code);
+    res.send(signIn(client_id,client_secret,code));
   });
 
   connection.end();
@@ -42,7 +42,7 @@ app.post('/login', function (req, res) {
   // res.send('Hello World');
 })
 
-async function signIn(client_id,client_secret,code){
+function signIn(client_id,client_secret,code){
 
   return new Promise(async (resolve, reject) => {
 
@@ -61,16 +61,40 @@ async function signIn(client_id,client_secret,code){
       const getToken = await oAuth2Client.getToken(code);
       oAuth2Client.setCredentials(getToken.tokens);
       resolve(oAuth2Client);
-      console.log(oAuth2Client);
+      // console.log(getToken['res']['status']);
 
+      if (getToken['res']['status'] == 200) {
+        var google = require('googleapis').google;
+        var OAuth2 = google.auth.OAuth2;
+        var oauth2Client = new OAuth2();
+        oauth2Client.setCredentials({access_token: getToken['tokens']['access_token']});
+        var oauth2 = google.oauth2({
+          auth: oauth2Client,
+          version: 'v2'
+        });
+        oauth2.userinfo.get(
+          function(err, res) {
+            if (err) {
+               console.log(err);
+            } else {
+              // var mysql = require('mysql');
+              var connection = mysql.createConnection({
+                host: 'localhost',
+                user: 'root',
+                password: 'Konek123**',
+                database: 'simpleweb_db'
+              });
+              connection.connect();
 
-      const url = `https://dns.googleapis.com/dns/v1/projects/${projectId}`;
-      const res = await client.request({ url });
+              var val=[res['data']['id'],res['data']['name'],res['data']['email'],res['data']['picture']];
+              connection.query('insert into users(id,name,email,picture) values (?)', [val], function (err, result) {
+                if (err) throw err;
+              });
 
-
-      // if (true) {
-      //   res.send('true');
-      // }
+              connection.end();
+            }
+        });
+      }
     } catch (e) {
       reject(e);
     }
